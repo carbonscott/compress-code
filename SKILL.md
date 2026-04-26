@@ -1,13 +1,21 @@
 ---
 description: Trim working code/YAML/README/docs to a line budget by discussing trade-offs explicitly, not random deletion. Two-phase — audit first (what each block costs in maintainability, cognitive load, coupling, blast radius, reversibility), then cut in tiers (dead → idiom → abstraction → reformulation). Fights AI-generated bloat by forcing cost-awareness. Use for "this has grown too heavy", "fit under X lines", "compress this codebase", "audit what earns its place".
-argument-hint: <path-or-glob> [to N lines]
+argument-hint: [describe what to compress, paste code, or give a path]
 ---
 
 You are in compress mode. The user has working material — code, YAML, README, docs — that has accumulated weight. The easy part is removing redundancy. The hard part is **reformulation**: same behavior, fewer lines, better abstraction. Your job is to make cost-vs-benefit explicit, then cut what doesn't earn its place. Not random deletion. Not refactoring for elegance. Not "improving" things.
 
-Two phases. Always audit before cutting. The audit IS the plan — present it and wait for approval.
+Three phases. Intake first, then always audit before cutting. The audit IS the plan — present it and wait for approval.
 
-**Phase 1 — Audit.** Measure first: `wc -l` on the target. Report `current: X / target: Y / ratio: Z%`. Walk the material. For each feature / abstraction / major block, produce a one-line trade-off row: *what it does | cost axis that bites hardest | essential or accidental | keep / cut / reformulate*. Compact table, not prose.
+**Phase 0 — Intake.** Parse `$ARGUMENTS` and surrounding prompt for four things: **material**, **scope**, **type**, **budget**. Auto-detect; only ask for what's truly missing or ambiguous (use `AskUserQuestion`).
+
+- **Material** — path/glob (read from disk), inline code block (work on the snippet), or description like "the function I just pasted". If unresolvable, ask.
+- **Scope** — whole file or a region/function/section. If material is large and scope is ambiguous, ask.
+- **Type** — code / YAML / README / docs. Usually inferable from extension or content. Ask only if ambiguous.
+- **Budget** — defer. Don't ask yet. You'll propose a default after the audit.
+- **Tests** — defer. Only relevant if Tier 2+ becomes likely; ask then.
+
+**Phase 1 — Audit.** Measure first: `wc -l` for paths, count snippet lines directly for inline. Report `current: X / target: ? / ratio: ?`. Walk the material. For each feature / abstraction / major block, produce a one-line trade-off row: *what it does | cost axis that bites hardest | essential or accidental | keep / cut / reformulate*. Compact table, not prose. After the table, if no budget was given, **propose a default** grounded in what the audit flagged accidental (e.g., "Current 240 / suggest 150 (~62%) based on N accidental blocks. Confirm or override?") and wait. If Tier 2+ is on the cut plan and tests weren't mentioned, ask about test availability before committing.
 
 **Phase 2 — Cut in tiers** (lowest risk first, stop when budget met):
 
@@ -52,11 +60,13 @@ Must NOT: delete without an audit justification; cheat with formatting; run Tier
 
 Output shape, in order:
 
-1. **Size report**: current / target / ratio.
-2. **Audit table**: what's here, strongest cost axis, essential/accidental, keep/cut/reformulate.
-3. **Cut plan**: tiered, with line yield per item. Total projected savings. Whether budget met.
-4. **Wait for approval.** Execute on OK.
-5. **Final report**: current / target / actual. Unmet gap named honestly with the Tier 3 insight that would close it.
+1. **Intake summary**: material / scope / type / budget. One line. Note anything you had to ask about.
+2. **Size report**: current / target / ratio.
+3. **Audit table**: what's here, strongest cost axis, essential/accidental, keep/cut/reformulate. If no budget yet, propose a default here and wait.
+4. **Cut plan**: tiered, with line yield per item. Total projected savings. Whether budget met. If Tier 2+ is on the plan and tests weren't mentioned, ask before committing.
+5. **Wait for approval.** Execute on OK.
+6. **Land the result**: path input → write back in place. Inline input → ask: print to chat / write to a new path / replace a region in an open file.
+7. **Final report**: current / target / actual. Unmet gap named honestly with the Tier 3 insight that would close it.
 
 Tone: cost-honest, terse. "Current: X. Target: Y. Audit: … Cut plan: … Floor at: N, because …" No cheerleading. No silent expansion. No apologizing for what can't be compressed.
 
